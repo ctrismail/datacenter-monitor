@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getDashboardSummaryApi, getEquipmentStatusesApi, getDashboardAlertsApi, getRecentChecksApi } from '../api/dashboard';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Server, CheckCircle, AlertTriangle, AlertOctagon, Zap, Thermometer, Activity, Battery, Flame } from 'lucide-react';
+import { Server, CheckCircle, AlertTriangle, AlertOctagon, Zap, Thermometer, Activity, Battery, Flame, ChevronLeft, ChevronRight } from 'lucide-react';
 import clsx from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -73,6 +73,8 @@ function TVStatusCard({ eq }: { eq: EquipmentStatus }) {
 
 export default function TVDashboardPage() {
   const [currentPage, setCurrentPage] = useState(0);
+  const [direction, setDirection] = useState(1);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const PAGE_DURATION = 15000;
 
   const { data: summary } = useQuery<DashboardSummary>({
@@ -99,7 +101,6 @@ export default function TVDashboardPage() {
     refetchInterval: 30000,
   });
 
-  // Build pages: overview + equipment pages (6 per page) + alert page if needed
   const equipmentPages: EquipmentStatus[][] = [];
   for (let i = 0; i < statuses.length; i += 6) {
     equipmentPages.push(statuses.slice(i, i + 6));
@@ -107,29 +108,48 @@ export default function TVDashboardPage() {
 
   const totalPages = 1 + equipmentPages.length + (alerts.length > 0 ? 1 : 0);
 
-  const nextPage = useCallback(() => {
-    setCurrentPage(p => (p + 1) % totalPages);
-  }, [totalPages]);
+  // Reset auto-rotation timer
+  const resetTimer = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      setDirection(1);
+      setCurrentPage(p => (p + 1) % totalPages);
+    }, currentPage === totalPages - 1 && alerts.length > 0 ? 30000 : PAGE_DURATION);
+  }, [totalPages, currentPage, alerts.length]);
 
   useEffect(() => {
     if (totalPages <= 1) return;
-    // If there are alerts and we're on alert page, stay longer
-    const duration = (alerts.length > 0 && currentPage === totalPages - 1) ? 30000 : PAGE_DURATION;
-    const timer = setInterval(nextPage, duration);
-    return () => clearInterval(timer);
-  }, [nextPage, totalPages, currentPage, alerts.length]);
+    resetTimer();
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [resetTimer, totalPages]);
 
   // Jump to alert page when new alert
   useEffect(() => {
     if (alerts.length > 0 && totalPages > 0) {
+      setDirection(1);
       setCurrentPage(totalPages - 1);
     }
   }, [alerts.length]);
 
+  const goToPage = (idx: number) => {
+    setDirection(idx > currentPage ? 1 : -1);
+    setCurrentPage(idx);
+  };
+
+  const goPrev = () => {
+    setDirection(-1);
+    setCurrentPage(p => (p - 1 + totalPages) % totalPages);
+  };
+
+  const goNext = () => {
+    setDirection(1);
+    setCurrentPage(p => (p + 1) % totalPages);
+  };
+
   const slideVariants = {
-    enter: { x: '100%', opacity: 0 },
+    enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0 }),
     center: { x: 0, opacity: 1 },
-    exit: { x: '-100%', opacity: 0 },
+    exit: (dir: number) => ({ x: dir > 0 ? '-100%' : '100%', opacity: 0 }),
   };
 
   const summaryCards = [
@@ -138,6 +158,8 @@ export default function TVDashboardPage() {
     { label: 'Uyarı', value: summary?.warning_count || '0', color: 'from-yellow-600 to-yellow-700', icon: AlertTriangle },
     { label: 'Gecikmiş', value: summary?.overdue_count || '0', color: 'from-red-600 to-red-700', icon: AlertOctagon },
   ];
+
+  const pageNames = ['Genel Bakış', ...equipmentPages.map((_, i) => `Ekipmanlar ${i + 1}`), ...(alerts.length > 0 ? ['Alarmlar'] : [])];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white overflow-hidden flex flex-col">
@@ -153,10 +175,24 @@ export default function TVDashboardPage() {
 
       {/* Page content */}
       <div className="flex-1 relative overflow-hidden">
-        <AnimatePresence mode="wait">
+        {/* Left/Right navigation arrows */}
+        {totalPages > 1 && (
+          <>
+            <button onClick={goPrev}
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-white/5 hover:bg-white/15 text-white/40 hover:text-white transition-all">
+              <ChevronLeft size={28} />
+            </button>
+            <button onClick={goNext}
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-white/5 hover:bg-white/15 text-white/40 hover:text-white transition-all">
+              <ChevronRight size={28} />
+            </button>
+          </>
+        )}
+
+        <AnimatePresence mode="wait" custom={direction}>
           {/* Page 0: Overview */}
           {currentPage === 0 && (
-            <motion.div key="overview" variants={slideVariants} initial="enter" animate="center" exit="exit"
+            <motion.div key="overview" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit"
               transition={{ duration: 0.8, ease: 'easeInOut' }}
               className="absolute inset-0 p-8">
               <div className="grid grid-cols-4 gap-6 mb-8">
@@ -178,7 +214,7 @@ export default function TVDashboardPage() {
           {/* Equipment pages */}
           {equipmentPages.map((page, idx) => (
             currentPage === idx + 1 && (
-              <motion.div key={`equip-${idx}`} variants={slideVariants} initial="enter" animate="center" exit="exit"
+              <motion.div key={`equip-${idx}`} custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit"
                 transition={{ duration: 0.8, ease: 'easeInOut' }}
                 className="absolute inset-0 p-8">
                 <h2 className="text-xl font-semibold text-white/80 mb-6">
@@ -193,7 +229,7 @@ export default function TVDashboardPage() {
 
           {/* Alert page */}
           {alerts.length > 0 && currentPage === totalPages - 1 && (
-            <motion.div key="alerts" variants={slideVariants} initial="enter" animate="center" exit="exit"
+            <motion.div key="alerts" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit"
               transition={{ duration: 0.8, ease: 'easeInOut' }}
               className="absolute inset-0 p-8">
               <div className="bg-red-900/30 border-2 border-red-500/50 rounded-2xl p-8 animate-pulse-red">
@@ -224,30 +260,50 @@ export default function TVDashboardPage() {
         </AnimatePresence>
       </div>
 
-      {/* Bottom ticker */}
-      <div className="border-t border-white/10 bg-slate-950/80 px-4 py-2 overflow-hidden">
-        <div className="flex items-center gap-4">
-          <span className="text-xs text-white/40 shrink-0">Son Kontroller</span>
-          <div className="overflow-hidden flex-1">
-            <div className="animate-marquee whitespace-nowrap">
-              {recentChecks.map((c: any, i: number) => (
-                <span key={i} className="inline-block mx-6 text-sm text-white/60">
-                  {new Date(c.checked_at).toLocaleTimeString('tr-TR')} - {c.user_name} - {c.equipment_name} - {c.check_type_name} -
-                  <span className={clsx('ml-1 font-medium', c.status === 'ok' ? 'text-green-400' : c.status === 'warning' ? 'text-yellow-400' : 'text-red-400')}>
-                    {c.status === 'ok' ? 'Normal' : c.status === 'warning' ? 'Uyarı' : 'Kritik'}
+      {/* Bottom bar: ticker + navigation */}
+      <div className="border-t border-white/10 bg-slate-950/80">
+        {/* Ticker */}
+        <div className="px-4 py-2 overflow-hidden border-b border-white/5">
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-white/40 shrink-0">Son Kontroller</span>
+            <div className="overflow-hidden flex-1">
+              <div className="animate-marquee whitespace-nowrap">
+                {recentChecks.map((c: any, i: number) => (
+                  <span key={i} className="inline-block mx-6 text-sm text-white/60">
+                    {new Date(c.checked_at).toLocaleTimeString('tr-TR')} - {c.user_name} - {c.equipment_name} - {c.check_type_name} -
+                    <span className={clsx('ml-1 font-medium', c.status === 'ok' ? 'text-green-400' : c.status === 'warning' ? 'text-yellow-400' : 'text-red-400')}>
+                      {c.status === 'ok' ? 'Normal' : c.status === 'warning' ? 'Uyarı' : 'Kritik'}
+                    </span>
                   </span>
-                </span>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Page indicator */}
-      <div className="absolute bottom-12 right-8 flex gap-2">
-        {Array.from({ length: totalPages }).map((_, i) => (
-          <div key={i} className={clsx('w-2 h-2 rounded-full transition-all', i === currentPage ? 'bg-blue-400 w-6' : 'bg-white/20')} />
-        ))}
+        {/* Page navigation */}
+        <div className="flex items-center justify-center gap-3 py-2.5 px-4">
+          <button onClick={goPrev} className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors">
+            <ChevronLeft size={18} />
+          </button>
+          <div className="flex items-center gap-2">
+            {Array.from({ length: totalPages }).map((_, i) => (
+              <button key={i} onClick={() => goToPage(i)}
+                className={clsx(
+                  'rounded-full transition-all duration-300 cursor-pointer',
+                  i === currentPage
+                    ? 'bg-blue-500 h-3 w-10'
+                    : 'bg-white/20 hover:bg-white/40 h-3 w-3'
+                )}
+                title={pageNames[i]}
+              />
+            ))}
+          </div>
+          <button onClick={goNext} className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors">
+            <ChevronRight size={18} />
+          </button>
+          <span className="text-xs text-white/30 ml-2">{currentPage + 1} / {totalPages}</span>
+        </div>
       </div>
     </div>
   );
