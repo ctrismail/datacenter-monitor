@@ -9,6 +9,13 @@
   "scripts": {
     "dev": "npm run dev --workspace=server & npm run dev --workspace=client",
     "dev:client": "npm run dev --workspace=client",
-    "dev:server": "npm run dev --workspace=server"
+    "dev:server": "npm run dev --workspace=server",
+    "build": "npm run build --workspace=client",
+    "start": "npx tsx server/src/index.ts",
+    "migrate": "npx tsx server/src/db/migrate.ts",
+    "seed": "npx tsx server/src/db/seed.ts"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
