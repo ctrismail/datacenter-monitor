@@ -45,5 +45,7 @@ export async function updateUser(id: number, data: { displayName?: string; passw
 }
 
 export async function deleteUser(id: number) {
-  await query('UPDATE users SET is_active = FALSE, updated_at = NOW() WHERE id = $1', [id]);
+  // Önce check_logs'daki referansları temizle
+  await query('UPDATE check_logs SET user_id = NULL WHERE user_id = $1', [id]);
+  await query('DELETE FROM users WHERE id = $1', [id]);
 }

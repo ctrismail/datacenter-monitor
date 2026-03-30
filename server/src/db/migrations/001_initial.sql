@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS check_logs (
     id            SERIAL PRIMARY KEY,
     equipment_id  INT         NOT NULL REFERENCES equipment(id) ON DELETE CASCADE,
     check_type_id INT         NOT NULL REFERENCES check_types(id) ON DELETE CASCADE,
-    user_id       INT         NOT NULL REFERENCES users(id) ON DELETE SET NULL,
+    user_id       INT         REFERENCES users(id) ON DELETE SET NULL,
     status        VARCHAR(20) NOT NULL CHECK (status IN ('ok', 'warning', 'critical')),
     notes         TEXT,
     checked_at    TIMESTAMPTZ DEFAULT NOW(),
