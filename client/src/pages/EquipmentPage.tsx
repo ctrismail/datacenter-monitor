@@ -4,7 +4,6 @@ import { listEquipmentApi, createEquipmentApi, updateEquipmentApi, deleteEquipme
 import toast from 'react-hot-toast';
 import { Plus, Trash2, MapPin, Pencil, X, Server } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import clsx from 'clsx';
 import type { Equipment, Category } from '../types';
 
 interface EquipmentForm {

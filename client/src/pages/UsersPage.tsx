@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listUsersApi, createUserApi, updateUserApi, deleteUserApi } from '../api/users';
 import toast from 'react-hot-toast';
-import { Plus, Trash2, UserCircle, Pencil, X, Shield } from 'lucide-react';
+import { Plus, Trash2, Pencil, X, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface UserForm {
