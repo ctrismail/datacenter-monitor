@@ -11,6 +11,8 @@ import equipmentRoutes from './routes/equipment.routes';
 import checksRoutes from './routes/checks.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import exportRoutes from './routes/export.routes';
+import snmpRoutes from './routes/snmp.routes';
+import { startPolling } from './services/snmp.service';
 
 const app = express();
 
@@ -26,6 +28,7 @@ app.use('/api/equipment', equipmentRoutes);
 app.use('/api/checks', checksRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/snmp', snmpRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {
@@ -43,4 +46,6 @@ app.use(errorHandler);
 
 app.listen(env.PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${env.PORT}`);
+  // SNMP polling'i başlat (aktif cihaz varsa)
+  startPolling().catch(err => console.log('SNMP polling init:', err.message));
 });

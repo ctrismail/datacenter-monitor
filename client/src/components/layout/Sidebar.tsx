@@ -1,9 +1,10 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Server, ClipboardCheck, History, Calendar, Users, X, Tv, Activity } from 'lucide-react';
+import { LayoutDashboard, Server, ClipboardCheck, History, Calendar, Users, X, Tv, Activity, Radio } from 'lucide-react';
 import clsx from 'clsx';
 
 const links = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/snmp', icon: Radio, label: 'SNMP Monitör' },
   { to: '/equipment', icon: Server, label: 'Ekipmanlar' },
   { to: '/check-entry', icon: ClipboardCheck, label: 'Kontrol Girişi' },
   { to: '/check-logs', icon: History, label: 'Kontrol Geçmişi' },

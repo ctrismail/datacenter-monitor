@@ -11,6 +11,7 @@ import CheckLogsPage from './pages/CheckLogsPage';
 import SchedulesPage from './pages/SchedulesPage';
 import UsersPage from './pages/UsersPage';
 import TVDashboardPage from './pages/TVDashboardPage';
+import SNMPPage from './pages/SNMPPage';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -38,6 +39,7 @@ export default function App() {
               <Route path="check-logs" element={<CheckLogsPage />} />
               <Route path="schedules" element={<SchedulesPage />} />
               <Route path="users" element={<UsersPage />} />
+              <Route path="snmp" element={<SNMPPage />} />
             </Route>
           </Routes>
         </BrowserRouter>
