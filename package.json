@@ -17,5 +17,8 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.59.0"
   }
 }
