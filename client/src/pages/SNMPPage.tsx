@@ -5,7 +5,6 @@ import { listEquipmentApi } from '../api/equipment';
 import toast from 'react-hot-toast';
 import { Plus, Trash2, X, Wifi, WifiOff, Radio, Bell, CheckCircle, AlertTriangle, AlertOctagon, Activity, Server, Zap, Thermometer, Battery, Flame } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import GaugeComponent from 'react-gauge-component';
 import CountUp from 'react-countup';
 import clsx from 'clsx';
 
@@ -53,34 +52,37 @@ function LiveDeviceCard({ device }: { device: any }) {
         </div>
       </div>
 
-      {/* Gauge'ler */}
-      <div className="grid grid-cols-2 gap-2 p-4">
-        {gaugeReadings.map((r: any, i: number) => (
-          <div key={i} className="text-center">
-            <GaugeComponent
-              value={Number(r.numeric_value) || 0}
-              minValue={0}
-              maxValue={getMaxForUnit(r.unit, r.label)}
-              type="semicircle"
-              arc={{
-                colorArray: ['#22c55e', '#eab308', '#ef4444'],
-                subArcs: getSubArcs(r.unit, r.label),
-                padding: 0.02,
-                width: 0.2,
-              }}
-              pointer={{ type: 'needle', color: '#475569', length: 0.7, width: 8 }}
-              labels={{
-                valueLabel: {
-                  formatTextValue: (val: number) => `${val}${r.unit || ''}`,
-                  style: { fontSize: '28px', fill: '#1e293b' }
-                },
-                tickLabels: { type: 'inner', hideMinMax: true }
-              }}
-              style={{ width: '100%', maxWidth: '160px', margin: '0 auto' }}
-            />
-            <p className="text-xs font-medium text-gray-500 mt-1">{r.label}</p>
-          </div>
-        ))}
+      {/* Gauge'ler - SVG */}
+      <div className="grid grid-cols-2 gap-3 p-4">
+        {gaugeReadings.map((r: any, i: number) => {
+          const max = getMaxForUnit(r.unit, r.label);
+          const val = Number(r.numeric_value) || 0;
+          const pct = Math.min(100, Math.max(0, (val / max) * 100));
+          const angle = (pct / 100) * 180;
+          const color = r.status === 'critical' ? '#ef4444' : r.status === 'warning' ? '#eab308' : '#22c55e';
+          return (
+            <div key={i} className="text-center">
+              <svg viewBox="0 0 120 70" className="w-full max-w-[140px] mx-auto">
+                {/* Background arc */}
+                <path d="M 10 65 A 50 50 0 0 1 110 65" fill="none" stroke="#e5e7eb" strokeWidth="8" strokeLinecap="round" />
+                {/* Value arc */}
+                <path d="M 10 65 A 50 50 0 0 1 110 65" fill="none" stroke={color} strokeWidth="8" strokeLinecap="round"
+                  strokeDasharray={`${(angle / 180) * 157} 157`}
+                  className="transition-all duration-1000 ease-out" />
+                {/* Needle */}
+                <line x1="60" y1="65" x2={60 + 40 * Math.cos(Math.PI - (angle * Math.PI / 180))} y2={65 - 40 * Math.sin(Math.PI - (angle * Math.PI / 180))}
+                  stroke="#475569" strokeWidth="2" strokeLinecap="round"
+                  className="transition-all duration-1000 ease-out" />
+                <circle cx="60" cy="65" r="4" fill="#475569" />
+                {/* Value text */}
+                <text x="60" y="55" textAnchor="middle" className="text-sm font-bold" fill="#1e293b" fontSize="14">
+                  {val}{r.unit || ''}
+                </text>
+              </svg>
+              <p className="text-xs font-medium text-gray-500 -mt-1">{r.label}</p>
+            </div>
+          );
+        })}
       </div>
 
       {/* Diğer okumalar - kompakt liste */}
@@ -116,17 +118,6 @@ function getMaxForUnit(unit: string, label: string): number {
   if (unit === 'dk') return 200;
   if (unit === 'rpm') return 2000;
   return 100;
-}
-
-function getSubArcs(unit: string, label: string): any[] {
-  if (unit === '%' && label.includes('Batarya')) return [{ limit: 30 }, { limit: 70 }, { limit: 100 }];
-  if (unit === '%' && label.includes('Yük')) return [{ limit: 50 }, { limit: 75 }, { limit: 100 }];
-  if (unit === '%' && label.includes('Nem')) return [{ limit: 30 }, { limit: 60 }, { limit: 100 }];
-  if (unit === '%') return [{ limit: 30 }, { limit: 70 }, { limit: 100 }];
-  if (unit === '°C') return [{ limit: 25 }, { limit: 40 }, { limit: 60 }];
-  if (unit === 'V' && label.includes('Akü')) return [{ limit: 22 }, { limit: 25 }, { limit: 30 }];
-  if (unit === 'V') return [{ limit: 210 }, { limit: 240 }, { limit: 260 }];
-  return [{ limit: 33 }, { limit: 66 }, { limit: 100 }];
 }
 
 function getStatusColor(status: string) {
