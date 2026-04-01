@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
+import { lazy, Suspense } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AppLayout from './components/layout/AppLayout';
 import LoginPage from './pages/LoginPage';
@@ -11,7 +12,7 @@ import CheckLogsPage from './pages/CheckLogsPage';
 import SchedulesPage from './pages/SchedulesPage';
 import UsersPage from './pages/UsersPage';
 import TVDashboardPage from './pages/TVDashboardPage';
-import SNMPPage from './pages/SNMPPage';
+const SNMPPage = lazy(() => import('./pages/SNMPPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -39,7 +40,7 @@ export default function App() {
               <Route path="check-logs" element={<CheckLogsPage />} />
               <Route path="schedules" element={<SchedulesPage />} />
               <Route path="users" element={<UsersPage />} />
-              <Route path="snmp" element={<SNMPPage />} />
+              <Route path="snmp" element={<Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}><SNMPPage /></Suspense>} />
             </Route>
           </Routes>
         </BrowserRouter>

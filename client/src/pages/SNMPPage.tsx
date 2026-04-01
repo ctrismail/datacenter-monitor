@@ -5,7 +5,6 @@ import { listEquipmentApi } from '../api/equipment';
 import toast from 'react-hot-toast';
 import { Plus, Trash2, X, Wifi, WifiOff, Radio, Bell, CheckCircle, AlertTriangle, AlertOctagon, Activity, Server, Zap, Thermometer, Battery, Flame } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import CountUp from 'react-countup';
 import clsx from 'clsx';
 
 const iconMap: Record<string, any> = { zap: Zap, thermometer: Thermometer, battery: Battery, flame: Flame };
@@ -93,7 +92,7 @@ function LiveDeviceCard({ device }: { device: any }) {
               <span className="text-xs text-gray-500">{r.label}</span>
               <div className="flex items-center gap-2">
                 <span className={clsx('text-sm font-semibold', getStatusColor(r.status))}>
-                  <CountUp end={Number(r.numeric_value) || 0} decimals={1} duration={1} preserveValue />
+                  {Number(r.numeric_value)?.toFixed(1) || '0'}
                   {r.unit && <span className="text-xs font-normal text-gray-400 ml-0.5">{r.unit}</span>}
                 </span>
                 <div className={clsx('w-2 h-2 rounded-full', getStatusDot(r.status))} />
